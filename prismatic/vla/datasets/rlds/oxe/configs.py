@@ -37,6 +37,7 @@ class StateEncoding(IntEnum):
     POS_QUAT = 2            # EEF XYZ (3) + Quaternion (4) + Gripper Open/Close (1)
     JOINT = 3               # Joint Angles (7, <PAD> if fewer) + Gripper Open/Close (1)
     JOINT_BIMANUAL = 4      # Joint Angles (2 x [ Joint Angles (6) + Gripper Open/Close (1) ])
+    POS_QUAT_BIMANUAL = 5   # Devol: 2 x [ EEF XYZ (3) + Quaternion (4) ] + 2 x Gripper Open/Close (1)
     # fmt: on
 
 
@@ -47,6 +48,7 @@ class ActionEncoding(IntEnum):
     JOINT_POS = 2           # Joint Delta Position (7) + Gripper Open/Close (1)
     JOINT_POS_BIMANUAL = 3  # Joint Delta Position (2 x [ Joint Delta Position (6) + Gripper Open/Close (1) ])
     EEF_R6 = 4              # EEF Delta XYZ (3) + R6 (6) + Gripper Open/Close (1)
+    EEF_POS_BIMANUAL = 5    # Devol: 2 x [ EEF Delta XYZ (3) + Delta Rotation (3) + Gripper Open/Close (1) ]
     # fmt: on
 
 
@@ -705,5 +707,26 @@ OXE_DATASET_CONFIGS = {
         "state_obs_keys": ["state"],
         "state_encoding": StateEncoding.JOINT_BIMANUAL,
         "action_encoding": ActionEncoding.JOINT_POS_BIMANUAL,
+    },
+    ### Devol Flexiv dual-arm, 3-cam source (custom; ported from the sibling openvla fork's
+    # docs/04r_lerobot_to_rlds.md -- see docs/04s_openvla_oft_feasibility.md in that repo for why)
+    # `wrist`/`secondary` are deliberately None: OpenVLA(-OFT) with `num_images_in_input=1` only
+    # consumes `load_camera_views=("primary",)`, so declaring extra views only misleads.
+    "devol_flexiv_dualarm": {
+        "image_obs_keys": {"primary": "image", "secondary": None, "wrist": None},
+        "depth_obs_keys": {"primary": None, "secondary": None, "wrist": None},
+        "state_obs_keys": ["EEF_state_left", "EEF_state_right", "gripper_state"],  # 7 + 7 + 2 = 16D
+        "state_encoding": StateEncoding.POS_QUAT_BIMANUAL,
+        "action_encoding": ActionEncoding.EEF_POS_BIMANUAL,
+    },
+    # Box-stacking variant of the above: same converter, same 34-D superset schema, different
+    # source batch -- a separate dataset name rather than reusing "devol_flexiv_dualarm" with a
+    # different data root, matching the sibling openvla fork's convention.
+    "devol_flexiv_dualarm_stackboxes": {
+        "image_obs_keys": {"primary": "image", "secondary": None, "wrist": None},
+        "depth_obs_keys": {"primary": None, "secondary": None, "wrist": None},
+        "state_obs_keys": ["EEF_state_left", "EEF_state_right", "gripper_state"],  # 7 + 7 + 2 = 16D
+        "state_encoding": StateEncoding.POS_QUAT_BIMANUAL,
+        "action_encoding": ActionEncoding.EEF_POS_BIMANUAL,
     },
 }

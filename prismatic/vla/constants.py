@@ -44,6 +44,22 @@ BRIDGE_CONSTANTS = {
     "ACTION_PROPRIO_NORMALIZATION_TYPE": NormalizationType.BOUNDS_Q99,
 }
 
+# Devol Flexiv dual-arm (custom; see docs/04s_openvla_oft_feasibility.md in the sibling openvla
+# repo). Action is per-arm [delta_xyz(3), delta_rotvec(3), gripper(1)] x 2 = 14D -- same
+# dimensionality as ALOHA_CONSTANTS, but this is a DELTA end-effector-pose action (like LIBERO's
+# EEF_POS), not ALOHA's absolute joint angles -- hence BOUNDS_Q99, not ALOHA's raw BOUNDS.
+# PROPRIO_DIM is 16, not 14: state is [grip_L, grip_R, xyz_L(3), xyz_R(3), quat_L(4), quat_R(4)]
+# (quaternion, not rotvec, per arm). NUM_ACTIONS_CHUNK=8 is a starting point -- the source dataset
+# is stride-5-subsampled from 30 Hz (~6 Hz effective step rate), so 8 steps is ~1.3s of open-loop
+# motion per query, in the same "~1 second chunk" ballpark ALOHA's own docs recommend. Re-derive
+# once real OFT inference latency is measured on the actual serving GPU.
+FLEXIV_CONSTANTS = {
+    "NUM_ACTIONS_CHUNK": 8,
+    "ACTION_DIM": 14,
+    "PROPRIO_DIM": 16,
+    "ACTION_PROPRIO_NORMALIZATION_TYPE": NormalizationType.BOUNDS_Q99,
+}
+
 
 # Function to detect robot platform from command line arguments
 def detect_robot_platform():
@@ -55,6 +71,8 @@ def detect_robot_platform():
         return "ALOHA"
     elif "bridge" in cmd_args:
         return "BRIDGE"
+    elif "flexiv" in cmd_args:
+        return "FLEXIV"
     else:
         # Default to LIBERO if unclear
         return "LIBERO"
@@ -70,6 +88,8 @@ elif ROBOT_PLATFORM == "ALOHA":
     constants = ALOHA_CONSTANTS
 elif ROBOT_PLATFORM == "BRIDGE":
     constants = BRIDGE_CONSTANTS
+elif ROBOT_PLATFORM == "FLEXIV":
+    constants = FLEXIV_CONSTANTS
 
 # Assign constants to global variables
 NUM_ACTIONS_CHUNK = constants["NUM_ACTIONS_CHUNK"]

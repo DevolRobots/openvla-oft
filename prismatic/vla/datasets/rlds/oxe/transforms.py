@@ -846,6 +846,20 @@ def aloha_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
     return trajectory
 
 
+def devol_flexiv_dualarm_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
+    # Action passes through untouched: the converter (in the sibling openvla fork's
+    # scripts/data_conversion/) already emits the final 14-D dual-arm layout, per arm
+    # [delta_xyz(3), delta_rotvec(3), gripper(1)].
+    #
+    # State is 16D [grip_L, grip_R, xyz_L(3), xyz_R(3), quat_L(4), quat_R(4)]; split into the keys
+    # `state_obs_keys` declares. Only consumed if `--use_proprio True`.
+    state = trajectory["observation"]["state"]
+    trajectory["observation"]["EEF_state_left"] = tf.concat([state[:, 2:5], state[:, 8:12]], axis=-1)
+    trajectory["observation"]["EEF_state_right"] = tf.concat([state[:, 5:8], state[:, 12:16]], axis=-1)
+    trajectory["observation"]["gripper_state"] = state[:, 0:2]
+    return trajectory
+
+
 # === Registry ===
 OXE_STANDARDIZATION_TRANSFORMS = {
     "bridge_oxe": bridge_oxe_dataset_transform,
@@ -930,4 +944,8 @@ OXE_STANDARDIZATION_TRANSFORMS = {
     "aloha1_fold_shirt_30_demos": aloha_dataset_transform,
     "aloha1_scoop_X_into_bowl_45_demos": aloha_dataset_transform,
     "aloha1_put_X_into_pot_300_demos": aloha_dataset_transform,
+    ### Devol Flexiv dual-arm (custom)
+    "devol_flexiv_dualarm": devol_flexiv_dualarm_dataset_transform,
+    # Box-stacking variant -- identical schema, so the same transform function applies unchanged.
+    "devol_flexiv_dualarm_stackboxes": devol_flexiv_dualarm_dataset_transform,
 }

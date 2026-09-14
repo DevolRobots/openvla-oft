@@ -29,8 +29,16 @@ def make_oxe_dataset_kwargs(
 ) -> Dict[str, Any]:
     """Generates config (kwargs) for given dataset from Open-X Embodiment."""
     dataset_kwargs = deepcopy(OXE_DATASET_CONFIGS[dataset_name])
-    if dataset_kwargs["action_encoding"] not in [ActionEncoding.EEF_POS, ActionEncoding.EEF_R6, ActionEncoding.JOINT_POS_BIMANUAL]:
-        raise ValueError(f"Cannot load `{dataset_name}`; only EEF_POS & EEF_R6 & JOINT_POS_BIMANUAL actions supported!")
+    if dataset_kwargs["action_encoding"] not in [
+        ActionEncoding.EEF_POS,
+        ActionEncoding.EEF_R6,
+        ActionEncoding.JOINT_POS_BIMANUAL,
+        ActionEncoding.EEF_POS_BIMANUAL,
+    ]:
+        raise ValueError(
+            f"Cannot load `{dataset_name}`; only EEF_POS & EEF_R6 & JOINT_POS_BIMANUAL & "
+            "EEF_POS_BIMANUAL actions supported!"
+        )
 
     # [Contract] For EEF_POS & EEF_R6 actions, only the last action dimension (gripper) is absolute!
     # Normalize all action dimensions *except* the gripper
@@ -43,6 +51,14 @@ def make_oxe_dataset_kwargs(
     elif dataset_kwargs["action_encoding"] is ActionEncoding.JOINT_POS_BIMANUAL:
         dataset_kwargs["absolute_action_mask"] = [True] * 14
         dataset_kwargs["action_normalization_mask"] = [True] * 14
+    elif dataset_kwargs["action_encoding"] is ActionEncoding.EEF_POS_BIMANUAL:
+        # Devol addition (ported from the sibling openvla fork): two independent arm blocks, each
+        # ending in its own absolute gripper, so the "only the last dimension is absolute"
+        # contract simply repeats per arm. This reads correctly only because the converter puts
+        # the gripper LAST within each block rather than the source superset's grippers-first
+        # order.
+        dataset_kwargs["absolute_action_mask"] = ([False] * 6 + [True]) * 2
+        dataset_kwargs["action_normalization_mask"] = ([True] * 6 + [False]) * 2
     dataset_kwargs["action_proprio_normalization_type"] = action_proprio_normalization_type
 
     # Adjust Loaded Camera Views
