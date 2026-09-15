@@ -49,12 +49,16 @@ BRIDGE_CONSTANTS = {
 # dimensionality as ALOHA_CONSTANTS, but this is a DELTA end-effector-pose action (like LIBERO's
 # EEF_POS), not ALOHA's absolute joint angles -- hence BOUNDS_Q99, not ALOHA's raw BOUNDS.
 # PROPRIO_DIM is 16, not 14: state is [grip_L, grip_R, xyz_L(3), xyz_R(3), quat_L(4), quat_R(4)]
-# (quaternion, not rotvec, per arm). NUM_ACTIONS_CHUNK=8 is a starting point -- the source dataset
-# is stride-5-subsampled from 30 Hz (~6 Hz effective step rate), so 8 steps is ~1.3s of open-loop
-# motion per query, in the same "~1 second chunk" ballpark ALOHA's own docs recommend. Re-derive
-# once real OFT inference latency is measured on the actual serving GPU.
+# (quaternion, not rotvec, per arm). NUM_ACTIONS_CHUNK=30: decided 2026-09-15
+# (docs/Ah_for_human.md#2 Q4, docs/08r_gpt_review.md#2.4) to convert at NATIVE 30 Hz rather than
+# inheriting vanilla OpenVLA's stride-5 subsampling -- that stride was only chosen to cut
+# per-timestep query cost for a single-step policy, which doesn't apply once one query returns a
+# whole chunk. 30 also matches the sibling `openpi` project's `action_horizon=30` on this same
+# Flexiv data (native rate), so results are comparable across policy families on the same tasks.
+# ~1s of open-loop motion per query, same ballpark as the old stride-5 value but at native (not
+# 5x-sparser) temporal resolution. Re-derive once real OFT inference latency is measured.
 FLEXIV_CONSTANTS = {
-    "NUM_ACTIONS_CHUNK": 8,
+    "NUM_ACTIONS_CHUNK": 30,
     "ACTION_DIM": 14,
     "PROPRIO_DIM": 16,
     "ACTION_PROPRIO_NORMALIZATION_TYPE": NormalizationType.BOUNDS_Q99,

@@ -47,9 +47,11 @@ to confirm exactly what to port; nothing here was written from scratch.
   (14, per-timestep), **not** by the chunked/flattened action length — so no `NUM_ACTIONS_CHUNK`
   multiplication needed here; chunking windows the trajectory elsewhere.
 - **`constants.py`**: added `FLEXIV_CONSTANTS` (`ACTION_DIM=14`, `PROPRIO_DIM=16`,
-  `NUM_ACTIONS_CHUNK=8`, `ACTION_PROPRIO_NORMALIZATION_TYPE=BOUNDS_Q99` — **not** ALOHA's raw
-  `BOUNDS`, since this project's actions are delta end-effector pose like LIBERO's, not ALOHA's
-  absolute joint angles) and a `"flexiv" in cmd_args` branch in `detect_robot_platform()`.
+  `NUM_ACTIONS_CHUNK` originally `8` as a stride-5-at-6Hz placeholder, now **`30`** — decided
+  2026-09-15 for native-30Hz cadence, `Ah_for_human.md`§2 Q4 — `ACTION_PROPRIO_NORMALIZATION_TYPE=
+  BOUNDS_Q99` — **not** ALOHA's raw `BOUNDS`, since this project's actions are delta
+  end-effector pose like LIBERO's, not ALOHA's absolute joint angles) and a `"flexiv" in cmd_args`
+  branch in `detect_robot_platform()`.
   Verified in isolation (loading the file directly, bypassing the full `prismatic` package import
   chain which needs the venv from step 2 of `04_plan.md`): passing
   `--dataset_name devol_flexiv_dualarm` on the command line correctly selects
@@ -58,6 +60,27 @@ to confirm exactly what to port; nothing here was written from scratch.
 **Not ported:** `mixtures.py` (`OXE_NAMED_MIXTURES`) — the sibling `openvla` fork never added an
 entry there either; it's only needed for weighted multi-dataset mixtures, not a single
 `--dataset_name` fine-tune.
+
+**2026-09-15 addition:** two more dataset config + transform registrations, `configs.py`/
+`transforms.py` only — same schema and `devol_flexiv_dualarm_dataset_transform`, no new code,
+just distinct dataset names (`08r_gpt_review.md`#2.2): `openvla_oft_flexiv_leftarm_stackboxes`
+(left-arm-only box-stacking) and `openvla_oft_flexiv_dualarm_dinrail` (DIN-rail wire-connector).
+No `materialize.py` change needed — its action-mask branch keys on
+`ActionEncoding.EEF_POS_BIMANUAL`, not on dataset name. No RLDS build exists for either yet.
+
+**Naming decided (`Ah_for_human.md`§2 Q5):** all three stack/DIN-rail registrations use the
+`openvla_oft_flexiv_<armconfig>_<task>` scheme (also renamed the existing
+`devol_flexiv_dualarm_stackboxes` → `openvla_oft_flexiv_dualarm_stackboxes`, since no RLDS build
+existed for it either), matching the sibling `openpi` project's naming for these same three tasks
+as closely as sensible — see `configs.py`'s comment for the full rationale and, importantly, **a
+note for whoever runs the conversion:** the sibling `openvla` repo's existing
+`DevolFlexivDualarmStackboxes` builder class needs a matching rename before
+`openvla_oft_flexiv_dualarm_stackboxes` will resolve via TFDS (not done here — that's the sibling
+repo's code, out of this session's scope).
+
+Also 2026-09-15: `scripts/submit_finetune.py` + `openvla_train.sh` (repo root, not under
+`prismatic/`) — the queue-safe `gbatch` launcher, ported from the sibling project
+(`08r_gpt_review.md`#2.5). See `05b_remote.md`§4 and `09_commands.md`§3.
 
 ## 3. What's still to write (not yet done)
 

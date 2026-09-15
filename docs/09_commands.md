@@ -27,42 +27,49 @@ export UV_CACHE_DIR=/cpfs01/wutingsh/.cache/uv
 cd /cpfs01/wutingsh/openvla-oft   # after cloning the repo there
 uv venv --python 3.11 .venv
 uv pip install --python .venv/bin/python -e .
-# Verify with a real import, not just a clean exit code:
-.venv/bin/python -c "import torch, transformers; print(torch.__version__, transformers.__version__, torch.cuda.is_available())"
+# Verify with a real import, not just a clean exit code (and check tensorflow_datasets/dlimp too,
+# not just torch/transformers -- a protobuf/tensorflow-metadata mismatch broke that import once,
+# docs/08r_gpt_review.md#2.1; pyproject.toml now pins compatible versions):
+.venv/bin/python -c "
+import torch, transformers, tensorflow_datasets, dlimp, wandb
+print(torch.__version__, transformers.__version__, torch.cuda.is_available())
+"
 ```
 
-## 3. Fine-tuning (once the venv exists — not yet run)
+## 3. Fine-tuning — **decisions made, still blocked on RLDS builds**
 
-Sample command, adapted from upstream `ALOHA.md`'s recipe shape and this project's own
-`FLEXIV_CONSTANTS` (`05a_codemap.md`). **Do not run directly on `devolremote`/`gpu245` — GPU jobs
-must go through `gbatch`**; this needs its own submitter script first
-(`05b_remote.md`§4), analogous to the sibling project's `scripts/submit_finetune.py`.
+All open recipe decisions are now settled (`Ah_for_human.md`§1–2, `08r_gpt_review.md`): task scope
+is **all three tasks in `h0_inputs.md`§2, run as three separate fine-tunes, serially, one GPU each**
+(not concurrently); action-execution cadence is **native 30 Hz** (`NUM_ACTIONS_CHUNK=30` in
+`constants.py`, not the old stride-5-at-6Hz); dataset names are `openvla_oft_flexiv_dualarm_stackboxes`
+/ `openvla_oft_flexiv_leftarm_stackboxes` / `openvla_oft_flexiv_dualarm_dinrail`
+(`05a_codemap.md`). **Still blocking a real submission:** no RLDS build exists yet for any of the
+three at native rate — the sibling `openvla` repo's converter needs to run with its no-op filter
+disabled (`08r_gpt_review.md`§2.3, env var `DEVOL_NOOP_FILTER=0`) and at native (not stride-5)
+sampling, and (for the box-stacking task) its `DevolFlexivDualarmStackboxes` builder class
+needs the matching rename noted in `05a_codemap.md`.
+
+`scripts/submit_finetune.py` + `openvla_train.sh` (ported from the sibling project's queue-safe
+launcher, `08r_gpt_review.md`#2.5) exist and work — verified with `--dry-run` below.
 
 ```bash
-torchrun --standalone --nnodes 1 --nproc-per-node <N_GPUS> vla-scripts/finetune.py \
-  --vla_path openvla/openvla-7b \
-  --data_root_dir /cpfs01/wutingsh/rlds224 \
-  --dataset_name devol_flexiv_dualarm \
-  --run_root_dir /cpfs01/wutingsh/openvla_oft_runs \
-  --use_l1_regression True \
-  --use_diffusion False \
-  --use_film False \
-  --num_images_in_input 1 \
-  --use_proprio False \
-  --lora_rank 32 \
-  --batch_size <PER-DEVICE, see finetune.py default> \
-  --learning_rate 5e-4 \
-  --save_freq 10000 \
-  --save_latest_checkpoint_only False \
-  --image_aug True \
-  --wandb_entity "<SAME AS SIBLING PROJECT'S openvla_train.sh, IF REUSING>" \
-  --wandb_project "<SAME>" \
-  --run_id_note flexiv_dualarm--oft--l1_regression--8_acts_chunk--no_film
+# Dry-run only, to see the exact recipe/env/gbatch command without submitting anything:
+python3 scripts/submit_finetune.py --gpus 1 --dataset-name openvla_oft_flexiv_dualarm_stackboxes --dry-run
+
+# Once each task's RLDS build exists, drop --dry-run and submit the three ONE AT A TIME (Q3:
+# serially, 1 GPU each — wait for one to finish/checkpoint before starting the next, don't queue
+# all three concurrently). GPU allocation must be re-confirmed fresh (gqueue -u all -s Running +
+# nvidia-smi on both machines) before each submission.
+python3 scripts/submit_finetune.py --gpus 1 --dataset-name openvla_oft_flexiv_dualarm_stackboxes
+python3 scripts/submit_finetune.py --gpus 1 --dataset-name openvla_oft_flexiv_leftarm_stackboxes
+python3 scripts/submit_finetune.py --gpus 1 --dataset-name openvla_oft_flexiv_dualarm_dinrail
 ```
 
-`--use_proprio False` above is confirmed (`Ah_for_human.md`§1 Q1, decided 2026-09-15) — matches
-the sibling project's existing behavior (proprio declared in the schema but never fed to the
-model).
+`--use_proprio False` and `NUM_ACTIONS_CHUNK=30` are baked into `openvla_train.sh`'s/
+`constants.py`'s defaults already, nothing to pass explicitly. `MERGE_LORA_DURING_TRAINING`
+defaults to `False` in `openvla_train.sh` (`08r_gpt_review.md`#3.1 — merging at every 10k-step
+save can consume 300GB+ of shared `/cpfs01` for one run); pass `--merge-lora-during-training` to
+`submit_finetune.py` only if you specifically want that.
 
 ## 4. Serving (not yet written)
 

@@ -946,6 +946,10 @@ OXE_STANDARDIZATION_TRANSFORMS = {
     "aloha1_put_X_into_pot_300_demos": aloha_dataset_transform,
     ### Devol Flexiv dual-arm (custom)
     "devol_flexiv_dualarm": devol_flexiv_dualarm_dataset_transform,
-    # Box-stacking variant -- identical schema, so the same transform function applies unchanged.
-    "devol_flexiv_dualarm_stackboxes": devol_flexiv_dualarm_dataset_transform,
+    # Box-stacking (both arm-configs) and DIN-rail tasks (h0_inputs.md#2) -- same 34-D superset
+    # schema, same transform in all three cases; see configs.py for per-dataset detail and the
+    # `openvla_oft_flexiv_*` naming rationale (docs/Ah_for_human.md#2 Q5, 2026-09-15).
+    "openvla_oft_flexiv_dualarm_stackboxes": devol_flexiv_dualarm_dataset_transform,
+    "openvla_oft_flexiv_leftarm_stackboxes": devol_flexiv_dualarm_dataset_transform,
+    "openvla_oft_flexiv_dualarm_dinrail": devol_flexiv_dualarm_dataset_transform,
 }

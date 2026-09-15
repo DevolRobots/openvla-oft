@@ -39,7 +39,11 @@ dependencies = [
     "jsonlines",
     "matplotlib",
     "peft==0.11.1",
-    "protobuf",
+    # tensorflow-metadata's generated code needs a protobuf API absent above 4.25.x; unconstrained
+    # protobuf resolves too new and `import tensorflow_datasets` fails with
+    # "cannot import name 'runtime_version' from 'google.protobuf'" (docs/08r_gpt_review.md#2.1).
+    # Same fix already verified in the sibling `openvla` project's pyproject.toml.
+    "protobuf>=4.21.6,<4.26",
     "rich",
     "sentencepiece==0.1.99",
     "timm==0.9.10",
@@ -47,12 +51,16 @@ dependencies = [
     "torch==2.2.0",
     "torchvision==0.17.0",
     "torchaudio==2.2.0",
-    "transformers @ git+https://github.com/moojink/transformers-openvla-oft.git",  # IMPORTANT: Use this fork for bidirectional attn (for parallel decoding)
+    # IMPORTANT: this fork adds bidirectional attn (for parallel decoding). Pinned to a tested
+    # revision (docs/08r_gpt_review.md#3.3) rather than a moving branch head, so a future rebuild
+    # can't silently resolve different code.
+    "transformers @ git+https://github.com/moojink/transformers-openvla-oft.git@bc339d9ad707454c0c115970db43c260067c61ab",
     "wandb",
     "tensorflow==2.15.0",
     "tensorflow_datasets==4.9.3",
+    "tensorflow-metadata==1.16.1",  # see protobuf comment above
     "tensorflow_graphics==2021.12.3",
-    "dlimp @ git+https://github.com/moojink/dlimp_openvla",
+    "dlimp @ git+https://github.com/moojink/dlimp_openvla@040105d256bd28866cc6620621a3d5f7b6b91b46",
     "diffusers==0.30.3",
     "imageio",
     "uvicorn",

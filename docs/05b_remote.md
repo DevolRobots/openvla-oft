@@ -70,7 +70,9 @@ uv pip install --python .venv/bin/python -e .
 The sibling project's `submit_finetune.py` convention: a gitignored repo-root `.env` with
 `WANDB_API_KEY_VALUE`, promoted to `WANDB_API_KEY` for the job, never embedded in the
 scheduler-visible command (goes into a `chmod 600` env file the job sources and deletes via an
-`EXIT` trap). This repo has no submitter script yet (`04_plan.md` step 3) — write one following
-the sibling project's `scripts/submit_finetune.py` as the reference (same file-ownership,
-environment, and secrets concerns apply identically), and set up this repo's own `.env` (copy the
-key from the sibling project's if reusing the same W&B entity/project).
+`EXIT` trap). **This repo now has its own `scripts/submit_finetune.py` + `openvla_train.sh`**
+(ported 2026-09-15, `08r_gpt_review.md`#2.5 — same file-ownership, environment, and secrets
+handling as the sibling project's reference, adapted for this repo's OFT flags). Still needs this
+repo's own `.env` set up before a real online-W&B run (copy the key from the sibling project's if
+reusing the same W&B entity/project) — without it `submit_finetune.py` falls back to
+`WANDB_MODE=offline` rather than failing.

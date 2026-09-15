@@ -30,3 +30,27 @@ This project exists because of a chain of events in the sibling `openvla` projec
 The research referenced above lives in the sibling repo at
 `~/dev/openvla/docs/04s_openvla_oft_feasibility.md` — read it for the full reasoning behind
 every decision in this project's `04_plan.md`/`06_current.md`.
+
+## 2. Task list (2026-09-14)
+
+Same as the `openpi` project. General info as follows:
+
+> Data path: `/cpfs01/data/devol/lerobot_vla_jepa/batch_20260909_203200_flexiv_action_superset_3cam`
+> prompt: Stack the boxes  
+> teleoperator: Jacky  
+> station: flexiv 1  
+> Arm: Dual  
+
+> Data path: `/cpfs01/data/devol/lerobot_vla_jepa/batch_20260910_170153_flexiv_action_superset_3cam`
+> prompt: Stack realsense boxes with only left arm
+> teleoperator: `yeepeng`  
+> station: flexiv 1  
+> Arm: single arm  
+> number of eps: 200  
+
+> Data path: `/cpfs01/data/devol/lerobot_vla_jepa/batch_20260904_102647_flexiv_action_superset_3cam`
+> prompt: mount the wire connector onto the DIN rail
+> teleoperator: `nik`  
+> station: flexiv 1  
+> Arm: dual  
+> number of eps: 400

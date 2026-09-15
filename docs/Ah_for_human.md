@@ -23,3 +23,54 @@ starting chunk size before the first fine-tune, or is 8 fine to try first and ad
 on measured inference latency?
 
 > no, 8 is fine.
+
+## 2. Post-review decisions (2026-09-15)
+
+A pre-fine-tuning review (`08r_gpt_review.md`) checked the environment, the new task list in
+`h0_inputs.md`§2, and the inherited data-conversion assumptions before anything gets submitted.
+Verdict: **do not submit yet.** Two of its blocking findings are code/config fixes and are
+already applied (protobuf/`tensorflow-metadata` pin, verified with a real remote import; a
+queue-safe `submit_finetune.py`/`openvla_train.sh`; pinned git revisions for the `transformers`
+fork and `dlimp`; new dataset registrations for the two not-yet-built tasks below). Three need a
+call only you can make:
+
+### Q3.
+
+**Task scope.** `h0_inputs.md`§2 lists three source batches/tasks (dual-arm box-stacking,
+left-arm-only box-stacking, DIN-rail wire-connector). Only `devol_flexiv_dualarm_stackboxes`
+(dual-arm box-stacking) has code + an existing sibling-repo builder ready to point at data — no
+RLDS build exists yet for any of the three on `/cpfs01`, and the other two only got dataset
+registrations added in this repo just now (`devol_flexiv_leftarm_stackboxes`,
+`devol_flexiv_dualarm_dinrail` — names are my choice, not yet confirmed by you, see Q5). Is the
+intended deliverable **all three as separate fine-tunes**, or **just the dual-arm box-stacking
+run** first (matching the "Stack the boxes" framing at the top of `h0_inputs.md`§2), with the
+other two deferred?
+
+> All three as seperate fine-tunes, but serially; use 1 GPU at a time.
+
+### Q4.
+
+**Action execution cadence.** Stride 5 (of the source 30 Hz data) was inherited from vanilla
+OpenVLA, where it was chosen because one model query = one action at ~6 Hz. OFT breaks that
+assumption: one query now returns a `NUM_ACTIONS_CHUNK`-length chunk, so query rate and action
+*execution* rate are no longer the same number — executing a stride-5 action stream at the
+robot's native 30 Hz would apply ~5x the intended motion per second, vs. 6 Hz which preserves the
+demonstrated timescale (`08r_gpt_review.md`#2.4). This needs to be settled **before** re-running
+data conversion for the new tasks, since stride and `NUM_ACTIONS_CHUNK` should be chosen together.
+Two shapes to choose between: (a) keep stride-5 data, stream actions client-side at 6 Hz (closest
+to today's default); or (b) convert at native 30 Hz with a larger chunk length. Which one, or do
+you want to see numbers first (e.g. a quick client-timing check) before deciding?
+
+> option (b) as recommended.
+
+### Q5.
+
+**Naming for the two new dataset registrations.** I picked `devol_flexiv_leftarm_stackboxes`
+(source: `batch_20260910_170153_..._3cam`, "Stack realsense boxes with only left arm") and
+`devol_flexiv_dualarm_dinrail` (source: `batch_20260904_102647_..._3cam`, "mount the wire
+connector onto the DIN rail"), following the existing `devol_flexiv_dualarm[_stackboxes]`
+convention — same schema/transform as the other two, just a distinct self-describing name per
+`08r_gpt_review.md`#2.2. Fine as-is, or rename before anyone builds RLDS data or starts a run
+under these names (renaming after that means re-registering or migrating a build)?
+
+> do whatever is the most similar to the existing convention used in `openpi`. A prefix of `openvla_oft_` would be nice too.

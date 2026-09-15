@@ -719,10 +719,54 @@ OXE_DATASET_CONFIGS = {
         "state_encoding": StateEncoding.POS_QUAT_BIMANUAL,
         "action_encoding": ActionEncoding.EEF_POS_BIMANUAL,
     },
-    # Box-stacking variant of the above: same converter, same 34-D superset schema, different
-    # source batch -- a separate dataset name rather than reusing "devol_flexiv_dualarm" with a
-    # different data root, matching the sibling openvla fork's convention.
-    "devol_flexiv_dualarm_stackboxes": {
+    # Box-stacking/DIN-rail variants (h0_inputs.md#2): same converter, same 34-D superset schema,
+    # different source batch per task -- a separate dataset name each rather than reusing
+    # "devol_flexiv_dualarm" with a different data root, matching the sibling openvla fork's
+    # convention. Named `openvla_oft_flexiv_<armconfig>_<task>` (decided 2026-09-15,
+    # docs/Ah_for_human.md#2 Q5) to match the sibling `openpi` project's naming for the SAME three
+    # tasks (`pi05_flexiv_<armconfig>_3cam_<task>_delta` etc, see src/openpi/training/config.py)
+    # as closely as sensible, with an `openvla_oft_` prefix instead of a model name in place of
+    # openpi's `pi05_`/`pi0_`. `3cam`/`delta` are dropped: openpi's `3cam` distinguishes how many
+    # camera views a config *consumes* (it uses all 3), but this repo's OFT configs always
+    # consume exactly one (`num_images_in_input=1`, see the `devol_flexiv_dualarm` comment above)
+    # regardless of the source batch having 3; openpi's `delta` distinguishes a delta vs.
+    # absolute-pose action representation choice this repo's registration has no equivalent of
+    # (always delta, `constants.py`). Neither token would carry information here.
+    #
+    # NOTE for whoever runs the conversion: `devol_flexiv_dualarm_stackboxes` (dual-arm
+    # box-stacking) already has a builder class in the sibling `openvla` repo
+    # (`scripts/data_conversion/devol_flexiv_dualarm_stackboxes/`, class
+    # `DevolFlexivDualarmStackboxes`) under the OLD name -- that class (and its folder) needs a
+    # matching rename to `openvla_oft_flexiv_dualarm_stackboxes` there before this name will
+    # resolve via TFDS. No RLDS build exists on disk for it yet, so nothing is lost by renaming.
+    # The other two tasks (leftarm-stackboxes, DIN-rail) have no builder anywhere yet -- write
+    # them directly under these new names, no rename needed.
+    "openvla_oft_flexiv_dualarm_stackboxes": {
+        "image_obs_keys": {"primary": "image", "secondary": None, "wrist": None},
+        "depth_obs_keys": {"primary": None, "secondary": None, "wrist": None},
+        "state_obs_keys": ["EEF_state_left", "EEF_state_right", "gripper_state"],  # 7 + 7 + 2 = 16D
+        "state_encoding": StateEncoding.POS_QUAT_BIMANUAL,
+        "action_encoding": ActionEncoding.EEF_POS_BIMANUAL,
+    },
+    # Left-arm-only box-stacking: source batch `batch_20260910_170153_flexiv_action_superset_3cam`,
+    # task "Stack realsense boxes with only left arm". Same 34-D superset schema/converter as the
+    # dataset above -- the right arm is simply idle in the demonstrations (openpi's equivalent
+    # config measured right-arm position/orientation std ~1e-5/1e-6, right-arm delta-action
+    # magnitude ~1e-4 m, vs. left-arm std 0.04-0.09 m), not a different action/state layout -- so
+    # no new StateEncoding/ActionEncoding is needed, only a distinct self-describing name
+    # (docs/08r_gpt_review.md#2.2). RLDS build not yet built as of 2026-09-15.
+    "openvla_oft_flexiv_leftarm_stackboxes": {
+        "image_obs_keys": {"primary": "image", "secondary": None, "wrist": None},
+        "depth_obs_keys": {"primary": None, "secondary": None, "wrist": None},
+        "state_obs_keys": ["EEF_state_left", "EEF_state_right", "gripper_state"],  # 7 + 7 + 2 = 16D
+        "state_encoding": StateEncoding.POS_QUAT_BIMANUAL,
+        "action_encoding": ActionEncoding.EEF_POS_BIMANUAL,
+    },
+    # DIN-rail wire-connector task: source batch `batch_20260904_102647_flexiv_action_superset_3cam`,
+    # task "mount the wire connector onto the DIN rail", dual arm. Same schema/converter as
+    # `devol_flexiv_dualarm` -- different source batch and task, hence its own name. RLDS build
+    # not yet built as of 2026-09-15.
+    "openvla_oft_flexiv_dualarm_dinrail": {
         "image_obs_keys": {"primary": "image", "secondary": None, "wrist": None},
         "depth_obs_keys": {"primary": None, "secondary": None, "wrist": None},
         "state_obs_keys": ["EEF_state_left", "EEF_state_right", "gripper_state"],  # 7 + 7 + 2 = 16D
