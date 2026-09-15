@@ -11,11 +11,10 @@ plan, step 1 done) → `05a_codemap.md` (exactly what code changed so far) → `
 (hosts, paths, the venv gotchas) → `09_commands.md` (actual commands to run).
 
 **Immediate next action: `04_plan.md` step 2 — build the venv.** Step 1 (dataset registration
-port) is done but **uncommitted** in this repo's working tree (`git status` in
-`~/dev/openvla-oft` to see the 4-file diff: `prismatic/vla/constants.py`,
-`prismatic/vla/datasets/rlds/oxe/{configs,transforms,materialize}.py`). Confirm with the user
-before committing — the working convention on the sibling `openvla` project has been to review
-diffs before committing, not commit unprompted.
+port: `prismatic/vla/constants.py`, `prismatic/vla/datasets/rlds/oxe/{configs,transforms,materialize}.py`)
+is done and committed — folded into `"Initial commit"` (`e9b7e09`) along with the `docs/`
+scaffold itself; `git status` is clean. (Docs previously said this was still uncommitted —
+corrected 2026-09-15.)
 
 **Read the sibling project's own investigation before doing anything else**, if not already
 familiar: `~/dev/openvla/docs/04s_openvla_oft_feasibility.md`. It's the source of nearly every
@@ -35,7 +34,8 @@ off, why proprio is undecided, why a new serve.py is needed rather than reusing 
 
 ## 3. Open items
 
-- **`--use_proprio` for the fine-tune** — not decided (`Ah_for_human.md`§1 Q1).
+- ~~**`--use_proprio` for the fine-tune** — not decided~~ **Decided 2026-09-15: `False`**
+  (`Ah_for_human.md`§1 Q1) — `NUM_ACTIONS_CHUNK=8` also confirmed as-is (Q2).
 - **GPU allocation** — neither `devolremote` nor `gpu245` had a free GPU as of 2026-09-14 when
   last checked (in the sibling project's session); re-check fresh with `gqueue -u all -s
   Running` + `nvidia-smi` on both, don't assume either is free from anything in these docs.

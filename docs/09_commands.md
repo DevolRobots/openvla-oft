@@ -60,9 +60,9 @@ torchrun --standalone --nnodes 1 --nproc-per-node <N_GPUS> vla-scripts/finetune.
   --run_id_note flexiv_dualarm--oft--l1_regression--8_acts_chunk--no_film
 ```
 
-`--use_proprio` is an open decision (`Ah_for_human.md`§1 Q1) — the flag above (`False`) matches
+`--use_proprio False` above is confirmed (`Ah_for_human.md`§1 Q1, decided 2026-09-15) — matches
 the sibling project's existing behavior (proprio declared in the schema but never fed to the
-model); flip to `True` only if that's been decided otherwise.
+model).
 
 ## 4. Serving (not yet written)
 

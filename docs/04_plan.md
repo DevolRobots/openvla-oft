@@ -26,10 +26,8 @@ control frequency enough to make the rollout usable. Full reasoning:
    existing checkpoint — OFT's continuous action head + chunked attention pattern isn't present
    in a vanilla-OpenVLA checkpoint. Recipe shape: same `torchrun ... finetune.py` invocation as
    the sibling project, plus `--use_l1_regression True --use_diffusion False --use_film False
-   --num_images_in_input 1 --lora_rank 32`. **Open decision, not yet made:** `--use_proprio`
-   (this project's schema has never fed proprio to the model; enabling it here would be a new
-   capability, not parity) — see `hA_for_agent.md`/`Ah_for_human.md` if this needs a call before
-   submitting. Go through `gbatch`/the GPU queue exactly as the sibling project does (same
+   --num_images_in_input 1 --lora_rank 32`. **`--use_proprio False`** (decided 2026-09-15, `Ah_for_human.md`§1 Q1 — matches the sibling
+   project's existing behavior, not a new capability). Go through `gbatch`/the GPU queue exactly as the sibling project does (same
    cluster, same policy: save at most every 10000 steps, re-confirm GPU allocation before every
    run). Order-of-magnitude cost: expect similar to the sibling project's ~24h wall-clock run —
    still a 7B LoRA fine-tune at the same batch/model scale.

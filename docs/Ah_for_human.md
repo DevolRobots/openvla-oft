@@ -13,7 +13,7 @@ where the schema declares state fields but the model never sees them)? Enabling 
 capability, not parity with the existing checkpoint — recommend leaving it `False` for a
 like-for-like comparison unless there's a specific reason to add it now.
 
->
+> leave it false for now.
 
 ### Q2.
 
@@ -22,4 +22,4 @@ this dataset's ~6 Hz effective step rate — see `05a_codemap.md`). Any preferen
 starting chunk size before the first fine-tune, or is 8 fine to try first and adjust later based
 on measured inference latency?
 
->
+> no, 8 is fine.

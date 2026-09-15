@@ -17,3 +17,9 @@
   profile to `constants.py`. Not yet committed.
 - (2026-09-14) Project docs scaffolded, populated with background from the sibling project and
   this session's research, for a fresh agent to pick up from here.
+- (2026-09-15) Correction: the dataset-registration port and the docs scaffold were both actually
+  folded into `"Initial commit"` (`e9b7e09`) already — `0A_agent.md`/`06_current.md` had been
+  saying step 1 was still uncommitted; fixed to match `git log`.
+- (2026-09-15) Both open fine-tuning decisions answered (`Ah_for_human.md`§1): `--use_proprio
+  False`, `NUM_ACTIONS_CHUNK=8` confirmed. Both already matched the recommended defaults, so no
+  plan/command changes — just closes out the open items.
