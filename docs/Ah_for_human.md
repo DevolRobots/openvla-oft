@@ -74,3 +74,32 @@ convention — same schema/transform as the other two, just a distinct self-desc
 under these names (renaming after that means re-registering or migrating a build)?
 
 > do whatever is the most similar to the existing convention used in `openpi`. A prefix of `openvla_oft_` would be nice too.
+
+## 3. Training resubmission (2026-09-16/17) — paused, needs a decision when priorities allow
+
+`07_HISTORY.md`'s 2026-09-16/17 entries have the full story. Short version: job 411 (dual-arm
+box-stacking) hit its `--time 24:00:00` limit at step 138,462/200,000 (measured ~1.58 it/s, so a
+full run actually needs ~35h, not the ~24h originally estimated) and was killed; jobs 412/413
+auto-cancelled via dependency-failure cascade without ever running. Nothing is currently queued.
+13 checkpoints (steps 10k–130k) survive from job 411.
+
+### Q6.
+
+**New `--time` for resubmission, and resume vs. restart for job 411.** Proposed: `--time
+48:00:00` (margin over the measured ~35h need) for all three, and resume job 411 from its
+130,000-step checkpoint (`--resume True --resume_step 130000 --vla_path
+<run_dir>--130000_chkpt`, `09_commands.md`§3) rather than restarting from scratch — saves ~22h of
+already-completed compute. Confirm both, or adjust (e.g. a different `--time`, or restart 411
+clean instead of resuming, or reduce `--max-steps` given the review's own note that the
+optimization budget was never really decided per-task, `08r_gpt_review.md`#3.2).
+
+>
+
+### Q7.
+
+**`scripts/submit_finetune.py`'s `--depends-on` addition and the sibling `~/dev/openvla` repo's
+new/renamed builder packages are both still uncommitted** (in both local and remote checkouts of
+each repo) — deliberately, per the "confirm before committing" convention, since a lot happened
+in one unattended stretch. OK to commit+push both now, or hold for review first?
+
+>

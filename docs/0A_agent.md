@@ -4,50 +4,37 @@
      file index, see 00_README.md (do not duplicate the table here). For shared cross-workstream
      codebase truths, see AA_intra_project_context.md if present. -->
 
-## 1. Status & next task (2026-09-15)
+## 1. Status & next task (2026-09-17)
 
 **Start here, then read in this order:** `01_overview.md` (what/why) → `04_plan.md` (the 5-step
-plan, step 1 done) → `05a_codemap.md` (exactly what code changed so far) → `05b_remote.md`
-(hosts, paths, the venv gotchas) → `09_commands.md` (actual commands to run) → **`08r_gpt_review.md`
-(current no-go verdict — read before touching step 3)**.
+plan, step 1–2 done) → `05a_codemap.md` (exactly what code changed) → `05b_remote.md` (hosts,
+paths, venv gotchas) → `09_commands.md`§3 (fine-tuning commands + current blocker) →
+`Ah_for_human.md`§3 (the open decision blocking the next step) → `06_current.md` (today's task).
 
-Step 1 (dataset registration port) is done and committed (`e9b7e09`). **Step 2 (venv) is also
-done** — built and verified (real import, not just clean exit) on both `devolremote` and `gpu245`
-(same `/cpfs01` checkout, `ting/dev` @ `68c3462`).
+**Steps 1–2 done** (dataset registration port, committed `e9b7e09`; venv, built+verified on both
+`devolremote`/`gpu245`). **Step 3 (fine-tune) is IN PROGRESS, PAUSED — not blocked on decisions
+anymore, blocked on priorities + one operational decision.**
 
-**Immediate next action: NOT step 3 (submit fine-tune) yet — but all decisions are made, only
-data prep is left.** A pre-fine-tuning review (`08r_gpt_review.md`, 2026-09-15) found the
-environment couldn't import `tensorflow_datasets`, the task list changed (`h0_inputs.md`§2, added
-while the venv build was in progress — 3 tasks now, not 1), the inherited no-op-filtered RLDS
-conversion is unsafe for action chunks, and no queue-safe submitter existed. All fixed or decided
-(uncommitted, this session):
-- `pyproject.toml`: pinned `tensorflow-metadata==1.16.1` + `protobuf>=4.21.6,<4.26` (fixes the
-  import failure — reinstalled + verified remotely with a real `import tensorflow_datasets,
-  dlimp, wandb`, not just `torch`/`transformers`) and pinned the `transformers`/`dlimp` git-fork
-  revisions instead of moving branch heads.
-- `scripts/submit_finetune.py` + `openvla_train.sh`: ported the sibling project's queue-safe
-  `gbatch` launcher, adapted for this repo's OFT flags; `merge_lora_during_training` defaults to
-  `False` (disk safety, `08r_gpt_review.md`#3.1). Verified with `--dry-run`.
-- **Task scope decided (`Ah_for_human.md`§2 Q3): all three tasks, as three separate fine-tunes,
-  run serially, one GPU each** — not concurrently.
-- **Cadence decided (Q4): native 30 Hz**, not the inherited stride-5-at-6Hz — matches the sibling
-  `openpi` project's `action_horizon=30` on the same data. `constants.py`'s `NUM_ACTIONS_CHUNK`
-  updated `8` → `30` accordingly.
-- **Dataset naming decided (Q5):** renamed to match `openpi`'s convention with an `openvla_oft_`
-  prefix — `openvla_oft_flexiv_dualarm_stackboxes` / `openvla_oft_flexiv_leftarm_stackboxes` /
-  `openvla_oft_flexiv_dualarm_dinrail` (registered in `configs.py`/`transforms.py`, verified
-  remotely). **Note:** the sibling `openvla` repo's existing `DevolFlexivDualarmStackboxes`
-  builder class still has the OLD name — needs a matching rename there before
-  `openvla_oft_flexiv_dualarm_stackboxes` resolves via TFDS (not done — out of this repo's scope,
-  see `05a_codemap.md`).
+All recipe decisions from the 2026-09-15 review are made and applied: task scope (all 3 tasks,
+serial, 1 GPU each), cadence (native 30 Hz, `NUM_ACTIONS_CHUNK=30`), dataset naming
+(`openvla_oft_flexiv_dualarm_stackboxes` / `_leftarm_stackboxes` / `_dualarm_dinrail`). All three
+RLDS builds exist on `/cpfs01/wutingsh/rlds224` (2026-09-15). Three fine-tune jobs were submitted
+to `gpu245` chained with `gbatch --depends-on` — **job 411 hit its 24h `--time` limit at step
+138,462/200,000 (real throughput is ~1.58 it/s ⇒ ~35h needed, not ~24h) and was killed; jobs
+412/413 auto-cancelled via the dependency-failure cascade. Nothing is currently queued.** 13
+checkpoints (10k–130k) survive from job 411 — resumable, not a restart from scratch.
 
-**Still blocking a real submission, regardless of the decisions above:** no RLDS build exists yet
-for any of the 3 tasks — the inherited converter's interior no-op deletion needs
-disabling/redesigning first for OFT (`08r_gpt_review.md`§2.3 — env var `DEVOL_NOOP_FILTER=0` in
-the sibling repo's converter, not yet verified sufficient on its own for chunk continuity), and
-conversion needs to target native 30 Hz per the cadence decision above (not the old stride-5
-default). This is sibling-repo (`~/dev/openvla`) data-conversion work, not something this repo's
-code changes.
+**Immediate next action, when priorities allow:** answer `Ah_for_human.md`§3 Q6 (new `--time`,
+resume-vs-restart) and Q7 (commit the uncommitted code — see below), then resubmit per
+`09_commands.md`§3.
+
+**Uncommitted right now** (deliberately — a lot happened in one unattended stretch, holding for
+review per the usual convention):
+- This repo: `scripts/submit_finetune.py`'s `--depends-on` + job-ID-capture addition.
+- The sibling `~/dev/openvla` repo: the renamed `openvla_oft_flexiv_dualarm_stackboxes` builder
+  package and the two new ones (`_leftarm_stackboxes`, `_dualarm_dinrail`) — needed for the RLDS
+  builds above to exist at all. That repo also has unrelated in-progress work of its own
+  (`deployment/flexiv_dualarm/`) untouched by this project.
 
 **Read the sibling project's own investigation before doing anything else**, if not already
 familiar: `~/dev/openvla/docs/04s_openvla_oft_feasibility.md`. It's the source of nearly every
@@ -67,20 +54,15 @@ off, why proprio is undecided, why a new serve.py is needed rather than reusing 
 
 ## 3. Open items
 
-- ~~**`--use_proprio` for the fine-tune** — not decided~~ **Decided 2026-09-15: `False`**
-  (`Ah_for_human.md`§1 Q1). ~~`NUM_ACTIONS_CHUNK=8`~~ **now `30`** (Q2 confirmed 8 as a starting
-  point on 2026-09-14; superseded by the native-30Hz cadence decision on 2026-09-15, Q4).
-- ~~**Task scope, cadence, dataset naming — open**~~ **All decided 2026-09-15**
-  (`Ah_for_human.md`§2 Q3–Q5): all 3 tasks, serially, 1 GPU each; native 30 Hz; `openvla_oft_
-  flexiv_*` names.
-- **GPU allocation** — neither `devolremote` nor `gpu245` had a free GPU as of 2026-09-14 when
-  last checked (in the sibling project's session); re-check fresh with `gqueue -u all -s
-  Running` + `nvidia-smi` on both, don't assume either is free from anything in these docs.
-- **No RLDS build exists yet for any of the 3 tasks in `h0_inputs.md`§2** on `/cpfs01` — code is
-  ready (all three registered under their final names) but none have been converted from LeRobot
-  yet, conversion needs to target native 30 Hz (not the old stride-5 default), and the existing
-  converter's interior no-op deletion needs disabling/redesigning first for OFT
-  (`08r_gpt_review.md`§2.3). This is the one remaining blocker before step 3.
+- ~~**`--use_proprio`, chunk size, task scope, cadence, dataset naming**~~ **all decided**
+  (`Ah_for_human.md`§1–2) — see §1 above for the current values.
+- **`Ah_for_human.md`§3 Q6 — new `--time` + resume-vs-restart for the killed job 411.** Blocks
+  resubmission. Proposed: `--time 48:00:00`, resume from the 130k checkpoint.
+- **`Ah_for_human.md`§3 Q7 — OK to commit the uncommitted code** (this repo's
+  `submit_finetune.py` change; the sibling repo's new/renamed builder packages)?
+- **GPU allocation must be re-checked fresh before resubmitting** — `gpu245` had a free GPU as of
+  2026-09-15/16 (`devolremote` did not), but that was multiple days ago by the time this is picked
+  back up; don't assume either machine's state from this doc.
 - **This is a scope-limited experiment, not a committed direction** (`01_overview.md`§2,
   `04_plan.md`§3) — if step 3 (fine-tune) or step 4 (new serving code) turns out substantially
   harder than expected, or the measured control frequency still isn't usable once tested, flag

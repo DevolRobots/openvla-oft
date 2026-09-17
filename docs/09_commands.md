@@ -36,33 +36,49 @@ print(torch.__version__, transformers.__version__, torch.cuda.is_available())
 "
 ```
 
-## 3. Fine-tuning — **decisions made, still blocked on RLDS builds**
+## 3. Fine-tuning — **RLDS builds done; resubmission paused, see `Ah_for_human.md`§3 Q6/Q7**
 
-All open recipe decisions are now settled (`Ah_for_human.md`§1–2, `08r_gpt_review.md`): task scope
-is **all three tasks in `h0_inputs.md`§2, run as three separate fine-tunes, serially, one GPU each**
-(not concurrently); action-execution cadence is **native 30 Hz** (`NUM_ACTIONS_CHUNK=30` in
-`constants.py`, not the old stride-5-at-6Hz); dataset names are `openvla_oft_flexiv_dualarm_stackboxes`
-/ `openvla_oft_flexiv_leftarm_stackboxes` / `openvla_oft_flexiv_dualarm_dinrail`
-(`05a_codemap.md`). **Still blocking a real submission:** no RLDS build exists yet for any of the
-three at native rate — the sibling `openvla` repo's converter needs to run with its no-op filter
-disabled (`08r_gpt_review.md`§2.3, env var `DEVOL_NOOP_FILTER=0`) and at native (not stride-5)
-sampling, and (for the box-stacking task) its `DevolFlexivDualarmStackboxes` builder class
-needs the matching rename noted in `05a_codemap.md`.
+All recipe decisions are settled (`Ah_for_human.md`§1–2, `08r_gpt_review.md`): all three tasks in
+`h0_inputs.md`§2, run as three separate fine-tunes, serially, one GPU each; native 30 Hz
+(`NUM_ACTIONS_CHUNK=30`); dataset names `openvla_oft_flexiv_dualarm_stackboxes` /
+`openvla_oft_flexiv_leftarm_stackboxes` / `openvla_oft_flexiv_dualarm_dinrail`. **All three RLDS
+builds exist** on `/cpfs01/wutingsh/rlds224` (2026-09-15, `07_HISTORY.md`).
+
+**Real measured throughput: ~1.58 it/s on an H200, i.e. a full 200,000-step run takes ~35h, not
+the ~24h originally estimated** (that estimate came from the sibling project's
+stride-5/`NUM_ACTIONS_CHUNK=8` numbers; native-rate data + `NUM_ACTIONS_CHUNK=30` costs more per
+step for real). The first attempt (job 411, `dualarm_stackboxes`) used the old `--time 24:00:00`
+default, got killed by the wall-time limit at step 138,462/200,000, and cascaded (gbatch's
+default auto-cancel-on-dependency-failure) into cancelling the other two queued jobs, which never
+ran. **Nothing is currently queued.** 13 checkpoints (steps 10k–130k) survive from job 411.
 
 `scripts/submit_finetune.py` + `openvla_train.sh` (ported from the sibling project's queue-safe
-launcher, `08r_gpt_review.md`#2.5) exist and work — verified with `--dry-run` below.
+launcher, `08r_gpt_review.md`#2.5) exist and work — verified with `--dry-run` and with a real
+submission. `submit_finetune.py` also has `--depends-on <job_id>` (chains a submission after
+another via `gbatch`'s own dependency mechanism — auto-cancels if the dependency fails) and
+prints a `JOB_ID=<n>` line for scripting the next `--depends-on` off of.
 
 ```bash
 # Dry-run only, to see the exact recipe/env/gbatch command without submitting anything:
 python3 scripts/submit_finetune.py --gpus 1 --dataset-name openvla_oft_flexiv_dualarm_stackboxes --dry-run
 
-# Once each task's RLDS build exists, drop --dry-run and submit the three ONE AT A TIME (Q3:
-# serially, 1 GPU each — wait for one to finish/checkpoint before starting the next, don't queue
-# all three concurrently). GPU allocation must be re-confirmed fresh (gqueue -u all -s Running +
-# nvidia-smi on both machines) before each submission.
-python3 scripts/submit_finetune.py --gpus 1 --dataset-name openvla_oft_flexiv_dualarm_stackboxes
-python3 scripts/submit_finetune.py --gpus 1 --dataset-name openvla_oft_flexiv_leftarm_stackboxes
-python3 scripts/submit_finetune.py --gpus 1 --dataset-name openvla_oft_flexiv_dualarm_dinrail
+# Chaining three jobs serially (adjust --time per Ah_for_human.md§3 Q6 before really doing this):
+python3 scripts/submit_finetune.py --gpus 1 --time 48:00:00 --dataset-name openvla_oft_flexiv_dualarm_stackboxes --tag stackboxes
+# -> parse JOB_ID from the output, then:
+python3 scripts/submit_finetune.py --gpus 1 --time 48:00:00 --dataset-name openvla_oft_flexiv_leftarm_stackboxes --tag leftarm_stackboxes --depends-on <job1_id>
+python3 scripts/submit_finetune.py --gpus 1 --time 48:00:00 --dataset-name openvla_oft_flexiv_dualarm_dinrail --tag dinrail --depends-on <job2_id>
+
+# To RESUME job 411 from its 130k checkpoint instead of restarting from scratch (saves ~22h of
+# already-completed compute) -- vla-scripts/finetune.py derives the run ID from --vla_path when
+# --resume is set, so this continues writing into the SAME run directory:
+#   --vla_path "/cpfs01/wutingsh/openvla_oft_runs/openvla-7b+openvla_oft_flexiv_dualarm_stackboxes+b8+lr-0.0005+lora-r32+dropout-0.0--image_aug--openvla_oft_ft_20260915_180339_3fe7a0_stackboxes--130000_chkpt" \
+#   --resume True --resume_step 130000
+# submit_finetune.py doesn't expose --resume/--resume_step/a custom --vla_path yet -- either add
+# them, or invoke openvla_train.sh's underlying torchrun command directly under gbatch by hand.
+
+# GPU allocation must be re-confirmed fresh before submitting anything (gqueue -u all -s Running +
+# nvidia-smi on BOTH devolremote and gpu245 -- gpu245 had a genuinely free GPU last time,
+# devolremote did not; ginfo's idle count isn't trustworthy on either machine).
 ```
 
 `--use_proprio False` and `NUM_ACTIONS_CHUNK=30` are baked into `openvla_train.sh`'s/

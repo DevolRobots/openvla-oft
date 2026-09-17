@@ -222,7 +222,9 @@ def write_secret_env_file(path, env):
     return path
 
 
-def build_gbatch_cmd(gpus, time, name, log_path, env, secret_env_path, script="./openvla_train.sh"):
+def build_gbatch_cmd(
+    gpus, time, name, log_path, env, secret_env_path, script="./openvla_train.sh", depends_on=None
+):
     # Everything below runs as wutingsh, inside runuser.
     #
     # `set -o pipefail` is load-bearing, not hygiene: the job's last step is
@@ -245,7 +247,13 @@ def build_gbatch_cmd(gpus, time, name, log_path, env, secret_env_path, script=".
         shlex.quote(str(REPO_ROOT)),
         shlex.quote(user_cmd),
     )
-    return ["gbatch", "--gpus", str(gpus), "--time", time, "--name", name, "bash", "-c", inner]
+    cmd = ["gbatch", "--gpus", str(gpus), "--time", time, "--name", name]
+    if depends_on:
+        # auto-cancel-on-failure is gbatch's own default -- if the job this depends on fails,
+        # this one is cancelled rather than starting on top of a broken/incomplete predecessor.
+        cmd += ["--depends-on", depends_on]
+    cmd += ["bash", "-c", inner]
+    return cmd
 
 
 def main():
@@ -272,6 +280,16 @@ def main():
         help="repo script to run under gbatch. Exists so diagnostics reuse this file's runuser + "
         "pipefail + secret handling instead of hand-rolling the nested quoting, which is where "
         "the bugs live.",
+    )
+    ap.add_argument(
+        "--depends-on",
+        default=None,
+        help="gbatch job dependency -- a job ID, or shorthand like '@' (the last job submitted "
+        "in this shell). This job is queued now but won't START until that one finishes "
+        "successfully; gbatch auto-cancels it if the dependency fails, so a broken predecessor "
+        "doesn't waste a GPU slot on a doomed run. Use to chain the three Flexiv tasks serially "
+        "on one GPU without polling: submit task 1, capture its job ID from this script's "
+        "output, pass it as --depends-on for task 2, etc.",
     )
     ap.add_argument("--dry-run", action="store_true", help="print the submission and exit")
     ap.add_argument(
@@ -335,6 +353,7 @@ def main():
         env=env,
         secret_env_path=secret_env_path,
         script=args.script,
+        depends_on=args.depends_on,
     )
 
     print("name    : %s" % name)
@@ -342,6 +361,8 @@ def main():
     print("script  : %s" % args.script)
     print("dataset : %s (%s)" % (args.dataset_name, args.data_root_dir))
     print("log     : %s" % log_path)
+    if args.depends_on:
+        print("depends : %s (auto-cancelled if that job fails)" % args.depends_on)
     print("merge_lora_during_training: %s" % env.get("MERGE_LORA_DURING_TRAINING", "False"))
     key_src = (
         "shell WANDB_API_KEY"
@@ -366,7 +387,13 @@ def main():
     if not VENV_PYTHON.exists():
         print("ERROR: %s not found -- see docs/05b_remote.md section 3" % VENV_PYTHON, file=sys.stderr)
         return 1
-    return subprocess.call(cmd)
+    out = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    sys.stdout.write(out.stdout)
+    m = re.search(r"Submitted batch job (\d+)", out.stdout)
+    if m:
+        # Machine-parseable line for a caller chaining --depends-on off this submission.
+        print("JOB_ID=%s" % m.group(1))
+    return out.returncode
 
 
 if __name__ == "__main__":

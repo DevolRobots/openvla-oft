@@ -52,3 +52,55 @@
   `08r_gpt_review.md` that were fixable in this repo's code/config are now applied; the remaining
   blocker (no RLDS build exists for any of the 3 tasks) is sibling-repo (`~/dev/openvla`)
   data-conversion work.
+- (2026-09-15) Created/renamed the 3 TFDS builder packages in the sibling `~/dev/openvla` repo's
+  `scripts/data_conversion/` to match the renamed dataset names: renamed
+  `devol_flexiv_dualarm_stackboxes` → `openvla_oft_flexiv_dualarm_stackboxes` (no RLDS build had
+  ever been produced under the old name, and this repo's own active docs had no competing plan
+  for it — verified before renaming), and created two new packages from scratch,
+  `openvla_oft_flexiv_leftarm_stackboxes` and `openvla_oft_flexiv_dualarm_dinrail`. **Uncommitted**
+  in both the local `~/dev/openvla` checkout and the remote `/cpfs01/wutingsh/openvla` one — that
+  repo also has unrelated in-progress work of its own (`deployment/flexiv_dualarm/schema.py`/
+  `serve.py` modified, a new `test_decode_jpeg_color.py`) which was left untouched.
+- (2026-09-15) Ran the LeRobot→RLDS conversion for all three tasks via the sibling repo's
+  `convert.py`, at **native 30 Hz** (`--stride 1`) with **no-op filtering off**
+  (`--no-noop-filter`), `--image-size 224`: `openvla_oft_flexiv_dualarm_stackboxes` (200 eps, 16
+  shards, ~1.6 GiB, ~17 min), `openvla_oft_flexiv_leftarm_stackboxes` (200 eps, 32 shards, ~25
+  min — its `right_gripper` action dim is fully degenerate/zero-span, confirmed harmless: the
+  normalizer's `zeros_mask` already maps `min==max` dims to a constant 0), `openvla_oft_flexiv_dualarm_dinrail`
+  (395 eps, 32 shards, ~35 min). All three verified importable and present in
+  `OXE_DATASET_CONFIGS`/`OXE_STANDARDIZATION_TRANSFORMS` on both `devolremote` and `gpu245`
+  (shared `/cpfs01`, no separate build needed per machine). `measure_noops.py` run on all three
+  source batches first — no assumption violations.
+- (2026-09-15) Copied the sibling `openvla` project's gitignored `.env` (W&B key) to
+  `/cpfs01/wutingsh/openvla-oft/.env` — a same-machine `cp`, contents never read by the agent, at
+  the human's explicit instruction. Confirmed working: job 411 (below) picked it up and logged
+  into W&B as the same entity/project the sibling project uses.
+- (2026-09-15) Extended `scripts/submit_finetune.py` with `--depends-on` (passthrough to
+  `gbatch --depends-on`) and stdout job-ID capture (`JOB_ID=<n>`), so the three fine-tunes could
+  be queued serially (one GPU each, per the human's instruction) without polling. **Uncommitted**
+  (synced to the remote checkout via `rsync` for testing, matching local, but never `git commit`).
+- (2026-09-15/16) Checked GPU availability: `devolremote` fully saturated (one 8-GPU job running,
+  8 more queued behind it); `gpu245` had a genuinely free GPU (node 7, confirmed via both
+  `gqueue`'s Running list and `nvidia-smi`). Submitted all three fine-tunes to `gpu245`, chained
+  with `--depends-on`: job 411 (`openvla_oft_flexiv_dualarm_stackboxes`, no dependency) → job 412
+  (`..._leftarm_stackboxes`, depends on 411) → job 413 (`..._dualarm_dinrail`, depends on 412),
+  each `--gpus 1 --time 24:00:00` (the script's then-default). Job 411 started immediately on
+  GPU 7 and was confirmed healthy (wandb login OK, training steps advancing).
+- (2026-09-16) **Job 411 hit its 24h `--time` limit and was killed (`State=Timeout`) at step
+  138,462/200,000 (69.2%)**, having measured ~1.58 it/s in practice — i.e. a full 200,000-step run
+  actually needs **~35 hours**, not the ~24h the docs had estimated (that estimate came from the
+  sibling project's stride-5/`NUM_ACTIONS_CHUNK=8` numbers; native-rate data plus
+  `NUM_ACTIONS_CHUNK=30` is a real per-step cost increase, not a miscalculation in this run). Per
+  gbatch's default auto-cancel-on-dependency-failure, **job 412 was cancelled
+  (`DependencyFailed:411`) and job 413 cascaded (`DependencyFailed:412`)** — neither ever ran.
+  13 checkpoints survive from job 411 (steps 10k–130k, LoRA adapter + action head only since
+  `merge_lora_during_training=False`, ~977 MiB each, ~13 GiB total) — enough to resume rather than
+  restart (`--resume True --resume_step 130000 --vla_path <...--130000_chkpt dir>`, see
+  `09_commands.md`§3).
+- (2026-09-17) Agent noticed the timeout mid-session (before the human returned) and asked
+  permission to cancel + resubmit with a longer `--time`; the cancel itself was blocked by the
+  permission system (destructive action needing explicit approval), and no answer arrived before
+  the human stepped away. **Nothing was resubmitted.** Human returned, said other work now has
+  priority — training resubmission is paused, not abandoned; see `Ah_for_human.md`§3 for the open
+  decision (new `--time` value; resume-from-130k vs. restart). Docs refreshed
+  (`06_current.md` archived to `07_archive/`) to reflect this pause.

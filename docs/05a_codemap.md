@@ -66,17 +66,21 @@ entry there either; it's only needed for weighted multi-dataset mixtures, not a 
 just distinct dataset names (`08r_gpt_review.md`#2.2): `openvla_oft_flexiv_leftarm_stackboxes`
 (left-arm-only box-stacking) and `openvla_oft_flexiv_dualarm_dinrail` (DIN-rail wire-connector).
 No `materialize.py` change needed — its action-mask branch keys on
-`ActionEncoding.EEF_POS_BIMANUAL`, not on dataset name. No RLDS build exists for either yet.
+`ActionEncoding.EEF_POS_BIMANUAL`, not on dataset name.
 
 **Naming decided (`Ah_for_human.md`§2 Q5):** all three stack/DIN-rail registrations use the
 `openvla_oft_flexiv_<armconfig>_<task>` scheme (also renamed the existing
 `devol_flexiv_dualarm_stackboxes` → `openvla_oft_flexiv_dualarm_stackboxes`, since no RLDS build
 existed for it either), matching the sibling `openpi` project's naming for these same three tasks
-as closely as sensible — see `configs.py`'s comment for the full rationale and, importantly, **a
-note for whoever runs the conversion:** the sibling `openvla` repo's existing
-`DevolFlexivDualarmStackboxes` builder class needs a matching rename before
-`openvla_oft_flexiv_dualarm_stackboxes` will resolve via TFDS (not done here — that's the sibling
-repo's code, out of this session's scope).
+as closely as sensible — see `configs.py`'s comment for the full rationale.
+
+**Done (2026-09-15):** the sibling `~/dev/openvla` repo's builder for box-stacking was renamed to
+match (`DevolFlexivDualarmStackboxes` → `OpenvlaOftFlexivDualarmStackboxes`), and two new builder
+packages were created there from scratch for the other two tasks (same pattern, ~15-line
+subclasses). **All three RLDS builds now exist** on `/cpfs01/wutingsh/rlds224` at native 30 Hz
+with no-op filtering off (`07_HISTORY.md`). These sibling-repo changes are **uncommitted** in both
+the local `~/dev/openvla` checkout and the remote `/cpfs01/wutingsh/openvla` one — see
+`Ah_for_human.md`§3 Q7.
 
 Also 2026-09-15: `scripts/submit_finetune.py` + `openvla_train.sh` (repo root, not under
 `prismatic/`) — the queue-safe `gbatch` launcher, ported from the sibling project
