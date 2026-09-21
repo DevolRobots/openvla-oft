@@ -26,7 +26,7 @@ Project-specific:
 
 | Path | Contents |
 |---|---|
-| `/cpfs01/wutingsh/rlds224/devol_flexiv_dualarm` | The dataset to fine-tune on — **already built** by the sibling project, reused as-is. 224x224 images, stride-5 subsampled (~6 Hz effective step rate). Do not rebuild; this is the same data the sibling project's vanilla-OpenVLA checkpoint trained on. |
+| `/cpfs01/wutingsh/rlds224/devol_flexiv_dualarm` | The dataset to fine-tune on — **already built** by the sibling project, reused as-is. 224x224 images, stride-5 subsampled (\~6 Hz effective step rate). Do not rebuild; this is the same data the sibling project's vanilla-OpenVLA checkpoint trained on. |
 | `/cpfs01/data/devol/lerobot_vla_jepa/batch_20260902_145405_flexiv_action_superset_3cam` | Source LeRobot batch (for `meta/modality.json`, `meta/stats_gr00t.json` — needed by the schema/serving side, not by training itself). |
 | `/cpfs01/wutingsh/openvla/` | The sibling vanilla-OpenVLA repo checkout — read its `deployment/flexiv_dualarm/` for the schema/serving contract to port (`04_plan.md` step 4). Its `.venv` **cannot** be reused here (§3). |
 | `/cpfs01/wutingsh/openvla_runs/` | Sibling project's checkpoints (`step_50000` merged model etc.) — for reference/comparison only, not inputs to this project's training. |

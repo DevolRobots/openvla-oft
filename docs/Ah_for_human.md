@@ -17,8 +17,8 @@ like-for-like comparison unless there's a specific reason to add it now.
 
 ### Q2.
 
-`NUM_ACTIONS_CHUNK=8` was picked as a starting point (~1.3 s of open-loop motion per query at
-this dataset's ~6 Hz effective step rate — see `05a_codemap.md`). Any preference for a different
+`NUM_ACTIONS_CHUNK=8` was picked as a starting point (\~1.3 s of open-loop motion per query at
+this dataset's \~6 Hz effective step rate — see `05a_codemap.md`). Any preference for a different
 starting chunk size before the first fine-tune, or is 8 fine to try first and adjust later based
 on measured inference latency?
 
@@ -51,10 +51,10 @@ other two deferred?
 ### Q4.
 
 **Action execution cadence.** Stride 5 (of the source 30 Hz data) was inherited from vanilla
-OpenVLA, where it was chosen because one model query = one action at ~6 Hz. OFT breaks that
+OpenVLA, where it was chosen because one model query = one action at \~6 Hz. OFT breaks that
 assumption: one query now returns a `NUM_ACTIONS_CHUNK`-length chunk, so query rate and action
 *execution* rate are no longer the same number — executing a stride-5 action stream at the
-robot's native 30 Hz would apply ~5x the intended motion per second, vs. 6 Hz which preserves the
+robot's native 30 Hz would apply \~5x the intended motion per second, vs. 6 Hz which preserves the
 demonstrated timescale (`08r_gpt_review.md`#2.4). This needs to be settled **before** re-running
 data conversion for the new tasks, since stride and `NUM_ACTIONS_CHUNK` should be chosen together.
 Two shapes to choose between: (a) keep stride-5 data, stream actions client-side at 6 Hz (closest
@@ -78,22 +78,22 @@ under these names (renaming after that means re-registering or migrating a build
 ## 3. Training resubmission (2026-09-16/17) — paused, needs a decision when priorities allow
 
 `07_HISTORY.md`'s 2026-09-16/17 entries have the full story. Short version: job 411 (dual-arm
-box-stacking) hit its `--time 24:00:00` limit at step 138,462/200,000 (measured ~1.58 it/s, so a
-full run actually needs ~35h, not the ~24h originally estimated) and was killed; jobs 412/413
+box-stacking) hit its `--time 24:00:00` limit at step 138,462/200,000 (measured \~1.58 it/s, so a
+full run actually needs \~35h, not the \~24h originally estimated) and was killed; jobs 412/413
 auto-cancelled via dependency-failure cascade without ever running. Nothing is currently queued.
 13 checkpoints (steps 10k–130k) survive from job 411.
 
 ### Q6.
 
 **New `--time` for resubmission, and resume vs. restart for job 411.** Proposed: `--time
-48:00:00` (margin over the measured ~35h need) for all three, and resume job 411 from its
+48:00:00` (margin over the measured \~35h need) for all three, and resume job 411 from its
 130,000-step checkpoint (`--resume True --resume_step 130000 --vla_path
-<run_dir>--130000_chkpt`, `09_commands.md`§3) rather than restarting from scratch — saves ~22h of
+<run_dir>--130000_chkpt`, `09_commands.md`§3) rather than restarting from scratch — saves \~22h of
 already-completed compute. Confirm both, or adjust (e.g. a different `--time`, or restart 411
 clean instead of resuming, or reduce `--max-steps` given the review's own note that the
 optimization budget was never really decided per-task, `08r_gpt_review.md`#3.2).
 
->
+> 48h confirmed.
 
 ### Q7.
 
@@ -102,4 +102,11 @@ new/renamed builder packages are both still uncommitted** (in both local and rem
 each repo) — deliberately, per the "confirm before committing" convention, since a lot happened
 in one unattended stretch. OK to commit+push both now, or hold for review first?
 
->
+> Yes — committed (`def4ed3` in `~/dev/openvla`; the `submit_finetune.py` change was already
+> committed as `791c47b` in this repo). Not pushed to remote yet.
+
+## 4. Resubmission hold (2026-09-21)
+
+> Hold off on resubmitting the three fine-tunes for now — more data and details are coming out
+> of the `openpi` runs that may affect this. I'll fetch the data and details myself; don't submit
+> jobs until then.

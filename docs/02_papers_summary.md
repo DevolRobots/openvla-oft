@@ -43,10 +43,10 @@ FiLM ("OFT+").
 - **The paper trains from the base VLM, not on top of an existing OpenVLA fine-tune.** This
   project's LoRA adapter/merged checkpoints from vanilla OpenVLA (in `~/dev/openvla`) cannot be
   continued into OFT — a new fine-tune from `openvla/openvla-7b` is required (`04_plan.md`).
-- **"~1 second-long chunks are a good default"** (the paper's own ALOHA guidance). This project's
+- **"\~1 second-long chunks are a good default"** (the paper's own ALOHA guidance). This project's
   RLDS conversion targets native 30 Hz (decided 2026-09-15, `Ah_for_human.md`§2 Q4 — not the
-  stride-5-subsampled ~6 Hz rate originally inherited from vanilla OpenVLA), so
-  `NUM_ACTIONS_CHUNK=30` (`05a_codemap.md`) targets ~1 s per query — treat as adjustable, not
+  stride-5-subsampled \~6 Hz rate originally inherited from vanilla OpenVLA), so
+  `NUM_ACTIONS_CHUNK=30` (`05a_codemap.md`) targets \~1 s per query — treat as adjustable, not
   fixed, once real inference latency is measured.
 
 ### 1.3. Also read

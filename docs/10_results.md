@@ -9,7 +9,7 @@
 No runs yet in this repo. The motivating results are in the sibling `openvla` project:
 
 - [`~/dev/openvla/docs/10_results.md`§R7](../../openvla/docs/10_results.md) — second rollout
-  attempt (2026-09-14), vanilla OpenVLA: arms move, but control frequency capped ~3.6 Hz (no
+  attempt (2026-09-14), vanilla OpenVLA: arms move, but control frequency capped \~3.6 Hz (no
   action chunking). This is the problem this project exists to try to fix.
 - [`~/dev/openvla/docs/10_results.md`§R6](../../openvla/docs/10_results.md) — first rollout
   attempt (2026-09-11), confounded by two serving bugs (fixed since).

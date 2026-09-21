@@ -7,7 +7,7 @@
 ## 1. Timeline
 
 - (2026-09-14) Project kicked off: the sibling `openvla` project's second rollout attempt moved
-  the arms but control frequency was too slow to be usable (one ~280 ms forward pass per
+  the arms but control frequency was too slow to be usable (one \~280 ms forward pass per
   timestep, no action chunking). Investigated OpenVLA-OFT as a fix
   (`~/dev/openvla/docs/04s_openvla_oft_feasibility.md`) — feasible, decided to try it.
 - (2026-09-14) Forked `moojink/openvla-oft` to `DevolRobots/openvla-oft`, cloned to
@@ -64,10 +64,10 @@
 - (2026-09-15) Ran the LeRobot→RLDS conversion for all three tasks via the sibling repo's
   `convert.py`, at **native 30 Hz** (`--stride 1`) with **no-op filtering off**
   (`--no-noop-filter`), `--image-size 224`: `openvla_oft_flexiv_dualarm_stackboxes` (200 eps, 16
-  shards, ~1.6 GiB, ~17 min), `openvla_oft_flexiv_leftarm_stackboxes` (200 eps, 32 shards, ~25
+  shards, \~1.6 GiB, \~17 min), `openvla_oft_flexiv_leftarm_stackboxes` (200 eps, 32 shards, \~25
   min — its `right_gripper` action dim is fully degenerate/zero-span, confirmed harmless: the
   normalizer's `zeros_mask` already maps `min==max` dims to a constant 0), `openvla_oft_flexiv_dualarm_dinrail`
-  (395 eps, 32 shards, ~35 min). All three verified importable and present in
+  (395 eps, 32 shards, \~35 min). All three verified importable and present in
   `OXE_DATASET_CONFIGS`/`OXE_STANDARDIZATION_TRANSFORMS` on both `devolremote` and `gpu245`
   (shared `/cpfs01`, no separate build needed per machine). `measure_noops.py` run on all three
   source batches first — no assumption violations.
@@ -87,14 +87,14 @@
   each `--gpus 1 --time 24:00:00` (the script's then-default). Job 411 started immediately on
   GPU 7 and was confirmed healthy (wandb login OK, training steps advancing).
 - (2026-09-16) **Job 411 hit its 24h `--time` limit and was killed (`State=Timeout`) at step
-  138,462/200,000 (69.2%)**, having measured ~1.58 it/s in practice — i.e. a full 200,000-step run
-  actually needs **~35 hours**, not the ~24h the docs had estimated (that estimate came from the
+  138,462/200,000 (69.2%)**, having measured \~1.58 it/s in practice — i.e. a full 200,000-step run
+  actually needs **\~35 hours**, not the \~24h the docs had estimated (that estimate came from the
   sibling project's stride-5/`NUM_ACTIONS_CHUNK=8` numbers; native-rate data plus
   `NUM_ACTIONS_CHUNK=30` is a real per-step cost increase, not a miscalculation in this run). Per
   gbatch's default auto-cancel-on-dependency-failure, **job 412 was cancelled
   (`DependencyFailed:411`) and job 413 cascaded (`DependencyFailed:412`)** — neither ever ran.
   13 checkpoints survive from job 411 (steps 10k–130k, LoRA adapter + action head only since
-  `merge_lora_during_training=False`, ~977 MiB each, ~13 GiB total) — enough to resume rather than
+  `merge_lora_during_training=False`, \~977 MiB each, \~13 GiB total) — enough to resume rather than
   restart (`--resume True --resume_step 130000 --vla_path <...--130000_chkpt dir>`, see
   `09_commands.md`§3).
 - (2026-09-17) Agent noticed the timeout mid-session (before the human returned) and asked
@@ -104,3 +104,8 @@
   priority — training resubmission is paused, not abandoned; see `Ah_for_human.md`§3 for the open
   decision (new `--time` value; resume-from-130k vs. restart). Docs refreshed
   (`06_current.md` archived to `07_archive/`) to reflect this pause.
+- (2026-09-21) `Ah_for_human.md`§3 Q6/Q7 answered (`--time 48:00:00`, resume from 130k; OK to
+  commit) and applied: sibling `~/dev/openvla` repo's RLDS builder packages committed (`def4ed3`,
+  not pushed). User then put resubmission **on hold** pending new data/details from the `openpi`
+  runs (`Ah_for_human.md`§4) — nothing resubmitted. `/docs fix` run: escaped unescaped literal
+  tildes across most docs files per spec §7.7; no structural violations found.

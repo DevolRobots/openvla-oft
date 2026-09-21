@@ -44,8 +44,8 @@ All recipe decisions are settled (`Ah_for_human.md`§1–2, `08r_gpt_review.md`)
 `openvla_oft_flexiv_leftarm_stackboxes` / `openvla_oft_flexiv_dualarm_dinrail`. **All three RLDS
 builds exist** on `/cpfs01/wutingsh/rlds224` (2026-09-15, `07_HISTORY.md`).
 
-**Real measured throughput: ~1.58 it/s on an H200, i.e. a full 200,000-step run takes ~35h, not
-the ~24h originally estimated** (that estimate came from the sibling project's
+**Real measured throughput: \~1.58 it/s on an H200, i.e. a full 200,000-step run takes \~35h, not
+the \~24h originally estimated** (that estimate came from the sibling project's
 stride-5/`NUM_ACTIONS_CHUNK=8` numbers; native-rate data + `NUM_ACTIONS_CHUNK=30` costs more per
 step for real). The first attempt (job 411, `dualarm_stackboxes`) used the old `--time 24:00:00`
 default, got killed by the wall-time limit at step 138,462/200,000, and cascaded (gbatch's
@@ -68,7 +68,7 @@ python3 scripts/submit_finetune.py --gpus 1 --time 48:00:00 --dataset-name openv
 python3 scripts/submit_finetune.py --gpus 1 --time 48:00:00 --dataset-name openvla_oft_flexiv_leftarm_stackboxes --tag leftarm_stackboxes --depends-on <job1_id>
 python3 scripts/submit_finetune.py --gpus 1 --time 48:00:00 --dataset-name openvla_oft_flexiv_dualarm_dinrail --tag dinrail --depends-on <job2_id>
 
-# To RESUME job 411 from its 130k checkpoint instead of restarting from scratch (saves ~22h of
+# To RESUME job 411 from its 130k checkpoint instead of restarting from scratch (saves \~22h of
 # already-completed compute) -- vla-scripts/finetune.py derives the run ID from --vla_path when
 # --resume is set, so this continues writing into the SAME run directory:
 #   --vla_path "/cpfs01/wutingsh/openvla_oft_runs/openvla-7b+openvla_oft_flexiv_dualarm_stackboxes+b8+lr-0.0005+lora-r32+dropout-0.0--image_aug--openvla_oft_ft_20260915_180339_3fe7a0_stackboxes--130000_chkpt" \

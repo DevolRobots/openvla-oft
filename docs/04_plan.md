@@ -44,7 +44,7 @@ achievable control frequency enough to make the rollout usable. Full reasoning:
    no-op filter disabled/redesigned so interior deletions don't break fixed-length action chunks
    (`08r_gpt_review.md`§2.3) — sibling-repo (`~/dev/openvla`) data-conversion work, not this
    repo's code. Order-of-magnitude cost once unblocked, per task: expect similar to the sibling
-   project's ~24h wall-clock run — still a 7B LoRA fine-tune at the same batch/model scale, times
+   project's \~24h wall-clock run — still a 7B LoRA fine-tune at the same batch/model scale, times
    three since they run serially.
 4. **Write a new serving path.** OFT's own `vla-scripts/deploy.py` speaks a different wire
    protocol (FastAPI/`json-numpy`) than what the `DevolInference` robot client expects. Needs a

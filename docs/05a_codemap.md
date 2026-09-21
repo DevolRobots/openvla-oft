@@ -76,7 +76,7 @@ as closely as sensible — see `configs.py`'s comment for the full rationale.
 
 **Done (2026-09-15):** the sibling `~/dev/openvla` repo's builder for box-stacking was renamed to
 match (`DevolFlexivDualarmStackboxes` → `OpenvlaOftFlexivDualarmStackboxes`), and two new builder
-packages were created there from scratch for the other two tasks (same pattern, ~15-line
+packages were created there from scratch for the other two tasks (same pattern, \~15-line
 subclasses). **All three RLDS builds now exist** on `/cpfs01/wutingsh/rlds224` at native 30 Hz
 with no-op filtering off (`07_HISTORY.md`). These sibling-repo changes are **uncommitted** in both
 the local `~/dev/openvla` checkout and the remote `/cpfs01/wutingsh/openvla` one — see
